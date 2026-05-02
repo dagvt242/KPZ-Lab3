@@ -1,3 +1,34 @@
+class NodeVisitor {
+    visitTextNode(textNode) {}
+    visitElementNode(elementNode) {}
+}
+
+class StatisticVisitor extends NodeVisitor {
+    constructor() {
+        super();
+        this.elementCount = 0;
+        this.textCount = 0;
+        this.totalTextLength = 0;
+    }
+
+    visitTextNode(textNode) {
+        this.textCount++;
+        this.totalTextLength += textNode.text.length;
+    }
+
+    visitElementNode(elementNode) {
+        this.elementCount++;
+    }
+
+    printStats() {
+        console.log(`\nСтатистика HTML дерева (Visitor): `);
+        console.log(`Кількість тегів: ${this.elementCount}`);
+        console.log(`Кількість текстових вузлів: ${this.textCount}`);
+        console.log(`Загальна кількість символів у тексті: ${this.totalTextLength}`);
+    }
+}
+
+
 class DepthIterator {
     constructor(root) {
         this.stack = [root];
@@ -76,6 +107,10 @@ class LightNode {
     getBreadthIterator() {
         return new BreadthIterator(this);
     }
+
+    accept(visitor) {
+        throw new Error("Метод accept() має бути реалізований");
+    }
 }
 
 class LightTextNode extends LightNode {
@@ -94,6 +129,10 @@ class LightTextNode extends LightNode {
 
     buildHTML() {
         return this.text;
+    }
+
+    accept(visitor) {
+        visitor.visitTextNode(this);
     }
 }
 
@@ -141,6 +180,13 @@ class LightElementNode extends LightNode {
         }
 
         return `${openTag}${this.innerHTML}</${this.tagName}>`;
+    }
+
+    accept(visitor) {
+        visitor.visitElementNode(this);
+        for (let child of this.children) {
+            child.accept(visitor);
+        }
     }
 }
 
@@ -198,6 +244,10 @@ function main() {
             console.log(`Текст: "${node.text}"`);
         }
     }
+
+    const statsVisitor = new StatisticVisitor();
+    container.accept(statsVisitor);
+    statsVisitor.printStats();
 }
 
 main();
