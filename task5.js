@@ -1,11 +1,26 @@
-
 class LightNode {
-    get outerHTML() {
-        throw new Error("Метод outerHTML має бути реалізований");
+    constructor() {
+        this.onCreated();
     }
+    get outerHTML() {
+        this.onBeforeRender();
+        const html = this.buildHTML();
+        this.onAfterRender();
+        return html;
+    }
+
     get innerHTML() {
         throw new Error("Метод innerHTML має бути реалізований");
     }
+
+    buildHTML() {
+        throw new Error("Метод buildHTML має бути реалізований");
+    }
+
+    onCreated() {}
+    onBeforeRender() {}
+    onAfterRender() {}
+    onInserted(node) {}
 }
 
 class LightTextNode extends LightNode {
@@ -14,11 +29,15 @@ class LightTextNode extends LightNode {
         this.text = text;
     }
 
+    onCreated() {
+        console.log(`[Hook] Створено текст: "${this.text}"`);
+    }
+
     get innerHTML() {
         return this.text;
     }
 
-    get outerHTML() {
+    buildHTML() {
         return this.text;
     }
 }
@@ -33,8 +52,21 @@ class LightElementNode extends LightNode {
         this.children = [];
     }
 
+    onCreated() {
+        console.log(`[Hook] Створено пустий тег <${this.tagName}>`);
+    }
+
+    onBeforeRender() {
+        console.log(`[Hook] Починаємо рендерити <${this.tagName}>...`);
+    }
+
     addChild(node) {
         this.children.push(node);
+        this.onInserted(node);
+    }
+
+    onInserted(node) {
+        console.log(`[Hook] У тег <${this.tagName}> додано новий елемент.`);
     }
 
     get childCount() {
@@ -45,7 +77,7 @@ class LightElementNode extends LightNode {
         return this.children.map(child => child.outerHTML).join('');
     }
 
-    get outerHTML() {
+    buildHTML() {
         const classAttr = this.cssClasses.length > 0 ? ` class="${this.cssClasses.join(' ')}"` : '';
         const openTag = `<${this.tagName}${classAttr}>`;
 
