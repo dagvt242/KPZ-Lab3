@@ -1,3 +1,66 @@
+class Command {
+    execute() { throw new Error("Метод execute() має бути реалізований"); }
+    undo() { throw new Error("Метод undo() має бути реалізований"); }
+}
+
+class AddClassCommand extends Command {
+    constructor(elementNode, className) {
+        super();
+        this.elementNode = elementNode;
+        this.className = className;
+    }
+
+    execute() {
+        console.log(`[Command] Додаємо клас '${this.className}' до тегу <${this.elementNode.tagName}>`);
+        this.elementNode.cssClasses.push(this.className);
+    }
+
+    undo() {
+        console.log(`[Undo] Видаляємо клас '${this.className}' з тегу <${this.elementNode.tagName}>`);
+        this.elementNode.cssClasses = this.elementNode.cssClasses.filter(c => c !== this.className);
+    }
+}
+
+class ChangeTextCommand extends Command {
+    constructor(textNode, newText) {
+        super();
+        this.textNode = textNode;
+        this.newText = newText;
+        this.oldText = textNode.text; // Запам'ятовуємо старий текст для скасування
+    }
+
+    execute() {
+        console.log(`Змінюємо текст з '${this.oldText}' на '${this.newText}'`);
+        this.textNode.text = this.newText;
+    }
+
+    undo() {
+        console.log(`Повертаємо старий текст '${this.oldText}'`);
+        this.textNode.text = this.oldText;
+    }
+}
+
+class CommandManager {
+    constructor() {
+        this.history = [];
+    }
+
+    executeCommand(command) {
+        command.execute();
+        this.history.push(command);
+    }
+
+    undoLastCommand() {
+        if (this.history.length > 0) {
+            const lastCommand = this.history.pop();
+            lastCommand.undo();
+        } else {
+            console.log("Немає дій для скасування.");
+        }
+    }
+}
+
+
 class NodeVisitor {
     visitTextNode(textNode) {}
     visitElementNode(elementNode) {}
@@ -191,63 +254,41 @@ class LightElementNode extends LightNode {
 }
 
 function main() {
-    console.log("Створюємо розмітку сторінки за допомогою LightHTML:\n");
-
-    const container = new LightElementNode('div', 'block', 'paired', ['container', 'dark-theme']);
-
+    const container = new LightElementNode('div', 'block', 'paired', ['container']);
     const h1 = new LightElementNode('h1', 'block', 'paired', ['title']);
     h1.addChild(new LightTextNode('Моє улюблене кафе'));
 
-    const ul = new LightElementNode('ul', 'block', 'paired', ['menu-list']);
+    const ul = new LightElementNode('ul', 'block', 'paired');
+    const li = new LightElementNode('li', 'block', 'paired');
+    const liText = new LightTextNode('Кава еспресо');
+    li.addChild(liText);
 
-    const li1 = new LightElementNode('li', 'block', 'paired');
-    li1.addChild(new LightTextNode('Кава еспресо'));
-
-    const li2 = new LightElementNode('li', 'block', 'paired', ['highlighted']);
-    li2.addChild(new LightTextNode('Чізкейк'));
-
-    const hr = new LightElementNode('hr', 'block', 'single');
-
-    ul.addChild(li1);
-    ul.addChild(li2);
-
+    ul.addChild(li);
     container.addChild(h1);
-    container.addChild(hr);
     container.addChild(ul);
 
-    console.log("Вивід innerHTML для списку (<ul>):");
-    console.log(ul.innerHTML);
+    const manager = new CommandManager();
 
-    console.log("\nВивід outerHTML для всього контейнера (<div>):");
-    console.log(container.outerHTML);
+    console.log("Стан до змін:");
+    console.log(li.outerHTML);
 
-    console.log(`\nКількість дочірніх елементів у контейнері: ${container.childCount}`);
+    const highlightCmd = new AddClassCommand(li, "active-item");
+    manager.executeCommand(highlightCmd);
 
-    console.log("Перебір дерева в глибину:");
-    const depthIter = container.getDepthIterator();
-    while (depthIter.hasNext()) {
-        const node = depthIter.next();
-        if (node instanceof LightElementNode) {
-            console.log(`Тег: <${node.tagName}>`);
-        } else {
-            console.log(`Текст: "${node.text}"`);
-        }
-    }
+    const renameCmd = new ChangeTextCommand(liText, "Подвійне еспресо");
+    manager.executeCommand(renameCmd);
 
-    console.log("\nПеребір дерева в ширину:");
-    const breadthIter = container.getBreadthIterator();
-    while (breadthIter.hasNext()) {
-        const node = breadthIter.next();
-        if (node instanceof LightElementNode) {
-            console.log(`Тег: <${node.tagName}>`);
-        } else {
-            console.log(`Текст: "${node.text}"`);
-        }
-    }
+    console.log("\nСтан після команд:");
+    console.log(li.outerHTML);
 
-    const statsVisitor = new StatisticVisitor();
-    container.accept(statsVisitor);
-    statsVisitor.printStats();
+    console.log("\nСкасування змін:");
+
+    manager.undoLastCommand();
+
+    manager.undoLastCommand();
+
+    console.log("\nФінальний стан:");
+    console.log(li.outerHTML);
 }
 
 main();
