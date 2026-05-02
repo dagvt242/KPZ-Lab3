@@ -1,4 +1,3 @@
-
 class LightNode {
     get outerHTML() {
         throw new Error("Метод outerHTML має бути реалізований");
@@ -31,6 +30,8 @@ class LightElementNode extends LightNode {
         this.closingType = closingType;
         this.cssClasses = cssClasses;
         this.children = [];
+
+        this.eventListeners = {};
     }
 
     addChild(node) {
@@ -39,6 +40,25 @@ class LightElementNode extends LightNode {
 
     get childCount() {
         return this.children.length;
+    }
+
+    addEventListener(eventType, callback) {
+        if (!this.eventListeners[eventType]) {
+            this.eventListeners[eventType] = [];
+        }
+        this.eventListeners[eventType].push(callback);
+    }
+
+    triggerEvent(eventType) {
+        console.log(`\n[Event System] Спрацювала подія '${eventType}' на елементі <${this.tagName}>`);
+
+        if (this.eventListeners[eventType]) {
+            this.eventListeners[eventType].forEach(callback => {
+                callback(this);
+            });
+        } else {
+            console.log(`(Реакції немає: на подію '${eventType}' ніхто не підписаний)`);
+        }
     }
 
     get innerHTML() {
@@ -89,6 +109,32 @@ function main() {
     console.log(container.outerHTML);
 
     console.log(`\nКількість дочірніх елементів у контейнері: ${container.childCount}`);
+
+    console.log("Додаємо EventListeners:");
+
+    h1.addEventListener('click', (element) => {
+        console.log(`Ви клікнули на заголовок. Додаємо йому новий CSS клас.`);
+        element.cssClasses.push('clicked-title');
+    });
+
+    li1.addEventListener('mouseover', () => {
+        console.log(`Ви навели мишку на еспресо. Підказка: "Міцна кава"`);
+    });
+
+    li1.addEventListener('mouseover', () => {
+        console.log(`Змінюємо колір фону на сірий.`);
+    });
+
+    console.log("\nІмітація дій користувача на сторінці:");
+
+    h1.triggerEvent('click');
+
+    li1.triggerEvent('mouseover');
+
+    li2.triggerEvent('click');
+
+    console.log(`\nОновлений HTML заголовка після події кліку:\n${h1.outerHTML}`);
+
 }
 
 main();
