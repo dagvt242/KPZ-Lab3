@@ -1,3 +1,50 @@
+class DepthIterator {
+    constructor(root) {
+        this.stack = [root];
+    }
+
+    hasNext() {
+        return this.stack.length > 0;
+    }
+
+    next() {
+        if (!this.hasNext()) return null;
+
+        const current = this.stack.pop();
+
+        if (current instanceof LightElementNode) {
+            for (let i = current.children.length - 1; i >= 0; i--) {
+                this.stack.push(current.children[i]);
+            }
+        }
+        return current;
+    }
+}
+
+class BreadthIterator {
+    constructor(root) {
+        this.queue = [root];
+    }
+
+    hasNext() {
+        return this.queue.length > 0;
+    }
+
+    next() {
+        if (!this.hasNext()) return null;
+
+        const current = this.queue.shift();
+
+        if (current instanceof LightElementNode) {
+            for (let child of current.children) {
+                this.queue.push(child);
+            }
+        }
+        return current;
+    }
+}
+
+
 class LightNode {
     constructor() {
         this.onCreated();
@@ -21,6 +68,14 @@ class LightNode {
     onBeforeRender() {}
     onAfterRender() {}
     onInserted(node) {}
+
+    getDepthIterator() {
+        return new DepthIterator(this);
+    }
+
+    getBreadthIterator() {
+        return new BreadthIterator(this);
+    }
 }
 
 class LightTextNode extends LightNode {
@@ -121,6 +176,28 @@ function main() {
     console.log(container.outerHTML);
 
     console.log(`\nКількість дочірніх елементів у контейнері: ${container.childCount}`);
+
+    console.log("Перебір дерева в глибину:");
+    const depthIter = container.getDepthIterator();
+    while (depthIter.hasNext()) {
+        const node = depthIter.next();
+        if (node instanceof LightElementNode) {
+            console.log(`Тег: <${node.tagName}>`);
+        } else {
+            console.log(`Текст: "${node.text}"`);
+        }
+    }
+
+    console.log("\nПеребір дерева в ширину:");
+    const breadthIter = container.getBreadthIterator();
+    while (breadthIter.hasNext()) {
+        const node = breadthIter.next();
+        if (node instanceof LightElementNode) {
+            console.log(`Тег: <${node.tagName}>`);
+        } else {
+            console.log(`Текст: "${node.text}"`);
+        }
+    }
 }
 
 main();
