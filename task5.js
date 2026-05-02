@@ -1,3 +1,21 @@
+class NodeState {
+    render(node) { throw new Error("Метод render() має бути реалізований"); }
+}
+
+class NormalState extends NodeState {
+    render(node) {
+        return node.buildHTML();
+    }
+}
+
+class HiddenState extends NodeState {
+    render(node) {
+        console.log(`[State] Елемент <${node.tagName}> прихований, рендер скасовано.`);
+        return "";
+    }
+}
+
+
 class Command {
     execute() { throw new Error("Метод execute() має бути реалізований"); }
     undo() { throw new Error("Метод undo() має бути реалізований"); }
@@ -142,10 +160,14 @@ class BreadthIterator {
 class LightNode {
     constructor() {
         this.onCreated();
+        this.state = new NormalState();
+    }
+    setState(state) {
+        this.state = state;
     }
     get outerHTML() {
         this.onBeforeRender();
-        const html = this.buildHTML();
+        const html = this.state.render(this);
         this.onAfterRender();
         return html;
     }
@@ -254,41 +276,29 @@ class LightElementNode extends LightNode {
 }
 
 function main() {
-    const container = new LightElementNode('div', 'block', 'paired', ['container']);
-    const h1 = new LightElementNode('h1', 'block', 'paired', ['title']);
-    h1.addChild(new LightTextNode('Моє улюблене кафе'));
+    console.log("Патерн Стейт:\n");
 
-    const ul = new LightElementNode('ul', 'block', 'paired');
-    const li = new LightElementNode('li', 'block', 'paired');
-    const liText = new LightTextNode('Кава еспресо');
-    li.addChild(liText);
+    const section = new LightElementNode('section', 'block', 'paired', ['main-content']);
+    const h2 = new LightElementNode('h2', 'block', 'paired');
+    h2.addChild(new LightTextNode('Заголовок секції'));
 
-    ul.addChild(li);
-    container.addChild(h1);
-    container.addChild(ul);
+    const p = new LightElementNode('p', 'block', 'paired');
+    p.addChild(new LightTextNode('Цей текст схований.'));
 
-    const manager = new CommandManager();
+    section.addChild(h2);
+    section.addChild(p);
 
-    console.log("Стан до змін:");
-    console.log(li.outerHTML);
+    console.log("Стан: Normal (Все видно)");
+    console.log(section.outerHTML);
 
-    const highlightCmd = new AddClassCommand(li, "active-item");
-    manager.executeCommand(highlightCmd);
+    console.log("\nМіняємо стан параграфа на Hidden");
+    p.setState(new HiddenState());
 
-    const renameCmd = new ChangeTextCommand(liText, "Подвійне еспресо");
-    manager.executeCommand(renameCmd);
+    console.log(section.outerHTML);
 
-    console.log("\nСтан після команд:");
-    console.log(li.outerHTML);
-
-    console.log("\nСкасування змін:");
-
-    manager.undoLastCommand();
-
-    manager.undoLastCommand();
-
-    console.log("\nФінальний стан:");
-    console.log(li.outerHTML);
+    console.log("\nПовертаємо видимість");
+    p.setState(new NormalState());
+    console.log(section.outerHTML);
 }
 
 main();
