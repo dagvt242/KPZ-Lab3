@@ -1,4 +1,3 @@
-
 class LightNode {
     get outerHTML() {
         throw new Error("Метод outerHTML має бути реалізований");
@@ -57,10 +56,52 @@ class LightElementNode extends LightNode {
     }
 }
 
+
+class ImageLoadStrategy {
+    load(href) {
+        throw new Error("Метод load() має бути реалізований");
+    }
+}
+
+class FileSystemLoadStrategy extends ImageLoadStrategy {
+    load(href) {
+        console.log(`[Стратегія: Файлова система] Читання байтів картинки з жорсткого диску за шляхом: ${href}`);
+        return href;
+    }
+}
+
+class NetworkLoadStrategy extends ImageLoadStrategy {
+    load(href) {
+        console.log(`[Стратегія: Мережа] Виконання HTTP-запиту для завантаження картинки за URL: ${href}`);
+        return href;
+    }
+}
+
+class LightImageNode extends LightElementNode {
+    constructor(href, cssClasses = []) {
+        super('img', 'inline', 'single', cssClasses);
+        this.href = href;
+
+        if (this.href.startsWith('http://') || this.href.startsWith('https://')) {
+            this.strategy = new NetworkLoadStrategy();
+        } else {
+            this.strategy = new FileSystemLoadStrategy();
+        }
+    }
+
+    get outerHTML() {
+        const loadedSrc = this.strategy.load(this.href);
+
+        const classAttr = this.cssClasses.length > 0 ? ` class="${this.cssClasses.join(' ')}"` : '';
+        return `<img src="${loadedSrc}"${classAttr}>`;
+    }
+}
+
+
 function main() {
     console.log("Створюємо розмітку сторінки за допомогою LightHTML:\n");
 
-    const container = new LightElementNode('div', 'block', 'paired', ['container', 'dark-theme']);
+    const container1 = new LightElementNode('div', 'block', 'paired', ['container', 'dark-theme']);
 
     const h1 = new LightElementNode('h1', 'block', 'paired', ['title']);
     h1.addChild(new LightTextNode('Моє улюблене кафе'));
@@ -78,17 +119,36 @@ function main() {
     ul.addChild(li1);
     ul.addChild(li2);
 
-    container.addChild(h1);
-    container.addChild(hr);
-    container.addChild(ul);
+    container1.addChild(h1);
+    container1.addChild(hr);
+    container1.addChild(ul);
 
     console.log("Вивід innerHTML для списку (<ul>):");
     console.log(ul.innerHTML);
 
     console.log("\nВивід outerHTML для всього контейнера (<div>):");
-    console.log(container.outerHTML);
+    console.log(container1.outerHTML);
 
-    console.log(`\nКількість дочірніх елементів у контейнері: ${container.childCount}`);
+    console.log(`\nКількість дочірніх елементів у контейнері: ${container1.childCount}`);
+
+
+    console.log("Демонстрація патерну Стратегія:\n");
+
+    const container2 = new LightElementNode('div', 'block', 'paired', ['gallery-container']);
+    const title = new LightElementNode('h2', 'block', 'paired');
+    title.addChild(new LightTextNode('Моя галерея'));
+
+    const localImage = new LightImageNode('images/my_photo.png', ['local-img']);
+
+    const networkImage = new LightImageNode('https://example.com/avatar.jpg', ['net-img']);
+
+    container2.addChild(title);
+    container2.addChild(localImage);
+    container2.addChild(networkImage);
+
+    console.log("Вивід outerHTML для всього контейнера:");
+    const finalHTML = container2.outerHTML;
+    console.log(finalHTML);
 }
 
 main();
